@@ -78,14 +78,16 @@ docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:ap
   オペレーティングシステム　Amazon Linux 2
   ランタイム　Standard
   イメージ　aws/codebuild/amazonlinux2-x86-64-standard:3.0
+  イメージのバージョン  常に最新のイメージ... を選択
   特権付与　有効化する
   サービスロール　新しいサービスロールを選択
   追加設定　環境変数に以下の値を追加
-    AWS_ACCOUNT_ID
-    AWS_DEFAULT_REGION
-    DOCKERHUB_USER
-    DOCKERHUB_PASS
-    IMAGE_REPO_NAME
+    名前:値
+    AWS_ACCOUNT_ID: YOUR-AWS-ACCOUNT-ID
+    AWS_DEFAULT_REGION: YOUR-AWS-DEFAULT-REGION
+    DOCKERHUB_USER: YOUR-DOCKERHUB-USER
+    DOCKERHUB_PASS: YOUR-DOCKERHUB-PASS
+    IMAGE_REPO_NAME: ECR-REPO-NAME
 
 ビルドプロジェクトを作成する
 ```
@@ -96,13 +98,14 @@ docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:ap
 ```
 パイプラインの設定
   パイプライン名　laravel-app-ecs-pipeline（例）
-  高度な設定　laravel-app-image（例）
+  高度な設定　S3バケットを選択　laravel-app-image（例）
 
 ソースステージを追加する
   ソースプロバイダー　Github(バージョン2)
   接続　Githubに接続する
-  接続名　food-app-ecs-pipeline
-  GitHub アプリ　「3. CodeBuildの作成」で作成したアプリを選択し接続
+  接続名　ecr-pipeline
+  GitHub アプリ　新しいアプリをインストールする
+  Repository access > Only select repositories > 
   リポジトリ名　siwai0208/ecs-pipeline
   ブランチ名　main
 
