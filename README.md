@@ -2,12 +2,15 @@
 
 ## **About**
 
-gitレポジトリーの変更をトリガーにECRへのPUSH、およびCodebuildをする
+gitレポジトリーの変更をトリガーにCodebuild→ECRへ更新されたイメージをPUSH
 
 ## **Inside Package**
- * web nginx:alpine
- * app php
- * DBはAWSのRDSを使用
+ * docker-compose.yml
+   <br>web nginx:alpine
+   <br>app php-fpm
+   <br>DBはAWSのRDSを使用
+ * buildspec.yml
+   <br>ECR login→build→tagづけ→ECRへpush
 
 ## **手順**
 
@@ -20,9 +23,9 @@ gitレポジトリーの変更をトリガーにECRへのPUSH、およびCodebui
  リポジトリを作成
 ```
 
-### **2. 「プッシュコマンドの表示」をクリックし、ポップアップの内容に従いローカルターミナルで以下**
+### **2. イメージの構築とPUSH**
 
-* Docker クライアントを認証
+* 「プッシュコマンドの表示」をクリックし、ポップアップの内容に従いローカルターミナルでDockerクライアント認証
 ```
 aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com
 ...
@@ -55,23 +58,22 @@ docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:we
 docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:app
 ```
 
-* 確認
-<br>AWSマネコンで ECR > リポジトリ > laravel-app-ecs（例）でweb, appの2つのイメージが保存されていることを確認する
+* AWSマネコンで ECR > リポジトリ > laravel-app-ecs（例）でweb, appの2つのイメージが保存されていることを確認する
 
 
-### 3. CodeBuildの作成
+### **3. CodeBuildの作成**
 
 * AWSマネコンで　デベロッパー用ツール > CodeBuild > ビルドプロジェクト > ビルドプロジェクトを作成
 ```
 プロジェクトの設定
-  プロジェクト名　laravel-app-ecs-build（例）
+  プロジェクト名　laravel-app-ecr-build（例）
 
 ソース
   ソースプロバイダ　Github
   リポジトリ　OAuth を使用して接続する　を選択
   Githubに接続　をクリック
   ポップアップで　確認　を選択
-  GitHub リポジトリ　https://github.com/siwai0208/ecs-pipeline.git　を選択
+  GitHub リポジトリ　https://github.com/siwai0208/ecr-codebuild.git　を選択
 
 環境
   環境イメージ　マネージド型イメージ
@@ -97,21 +99,21 @@ docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:ap
 * AWSマネコンで　デベロッパー用ツール > CodePipeline > パイプライン > パイプラインを作成する
 ```
 パイプラインの設定
-  パイプライン名　laravel-app-ecs-pipeline（例）
+  パイプライン名　ecr-codebuild-pipeline（例）
   高度な設定　S3バケットを選択　laravel-app-image（例）
 
 ソースステージを追加する
   ソースプロバイダー　Github(バージョン2)
   接続　Githubに接続する
-  接続名　ecr-pipeline
+  接続名　ecr-codebuild
   GitHub アプリ　新しいアプリをインストールする
   Repository access > Only select repositories > 
-  リポジトリ名　siwai0208/ecs-pipeline
+  リポジトリ名　siwai0208/ecr-codebuild
   ブランチ名　main
 
 ビルドステージを追加する
   プロバイダーを構築する　AWS CodeBuild
-  プロジェクト名　laravel-app-ecs-build（3. CodeBuildの作成で作成）
+  プロジェクト名　laravel-app-ecr-build（3. CodeBuildの作成で作成）
   次に
 
 デプロイ
@@ -125,4 +127,7 @@ docker push xxxxxxxxxxxx.dkr.ecr.ap-northeast-1.amazonaws.com/laravel-app-ecs:ap
 
 * AWSマネコン　IAM > ロール で「3. CodeBuildの作成」で作成した新しいサービスロールを選択し「AmazonEC2ContainerRegistryFullAccess」「AmazonS3FullAccess」をポリシーをアタッチ
 
-* Codepipelineに戻り、Buildを再試行
+* Codepipelineに戻り、Buildを再試行→成功し、ECRのイメージが更新される
+
+* 以降、gitレポジトリーの変更をトリガーにCodebuild→ECRへ更新されたイメージがPUSHされる
+
